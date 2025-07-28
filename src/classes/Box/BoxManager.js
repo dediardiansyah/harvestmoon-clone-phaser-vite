@@ -170,7 +170,7 @@ export default class BoxManager {
     instance.btns.statusBtn.setVisible( true );
 
     // assemble current day and animal status info
-    const text = `Day: ${gameConfig.day}<br>Animal Status`;
+    const text = `Day: ${gameConfig.day}\nAnimal Status`;
 
     instance.dialogBox.loadBox( text );
   }
