@@ -31,49 +31,49 @@ export default class Player extends GameObjects.Sprite {
     const animations = [
       {
         key: 'walking-down',
-        frames: this.scene.anims.generateFrameNames('jack-walking', { frames: [0, 1] }),
+        frames: this.scene.anims.generateFrameNumbers('jack-walking', { frames: [0, 1] }),
         frameRate: 6,
         repeat: -1
       },
       {
         key: 'walking-up',
-        frames: this.scene.anims.generateFrameNames('jack-walking', { frames: [2, 3] }),
+        frames: this.scene.anims.generateFrameNumbers('jack-walking', { frames: [2, 3] }),
         frameRate: 6,
         repeat: -1
       },
       {
         key: 'walking-left',
-        frames: this.scene.anims.generateFrameNames('jack-walking', { frames: [4, 5] }),
+        frames: this.scene.anims.generateFrameNumbers('jack-walking', { frames: [4, 5] }),
         frameRate: 6,
         repeat: -1
       },
       {
         key: 'walking-right',
-        frames: this.scene.anims.generateFrameNames('jack-walking', { frames: [6, 7] }),
+        frames: this.scene.anims.generateFrameNumbers('jack-walking', { frames: [6, 7] }),
         frameRate: 6,
         repeat: -1
       },
       {
         key: 'ring-cowbell-down',
-        frames: this.scene.anims.generateFrameNames('jack-bell', { frames: [0, 1, 2, 3] }),
+        frames: this.scene.anims.generateFrameNumbers('jack-ring-cowbell-down', { start: 0, end: 3 }),
         frameRate: 6,
         repeat: 0
       },
       {
         key: 'ring-cowbell-up',
-        frames: this.scene.anims.generateFrameNames('jack-bell', { frames: [4, 5, 6, 7] }),
+        frames: this.scene.anims.generateFrameNumbers('jack-ring-cowbell-up', { start: 0, end: 3 }),
         frameRate: 6,
         repeat: 0
       },
       {
         key: 'ring-cowbell-left',
-        frames: this.scene.anims.generateFrameNames('jack-bell', { frames: [8, 9, 10, 11] }),
+        frames: this.scene.anims.generateFrameNumbers('jack-ring-cowbell-left', { start: 0, end: 3 }),
         frameRate: 6,
         repeat: 0
       },
       {
         key: 'ring-cowbell-right',
-        frames: this.scene.anims.generateFrameNames('jack-bell', { frames: [12, 13, 14, 15] }),
+        frames: this.scene.anims.generateFrameNumbers('jack-ring-cowbell-right', { start: 0, end: 3 }),
         frameRate: 6,
         repeat: 0
       }

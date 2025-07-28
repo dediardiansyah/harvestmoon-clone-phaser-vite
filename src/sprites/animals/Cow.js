@@ -11,7 +11,7 @@ export default class Cow extends Sprite {
     if ( ! this.scene.anims.get( 'cow-eating-front' ) ) {
       this.scene.anims.create({
         key: 'cow-eating-front',
-        frames: this.scene.anims.generateFrameNames( 'cow-eating-front', {
+        frames: this.scene.anims.generateFrameNumbers( 'cow-eating-front', {
           frames: [0, 1]
         }),
         frameRate: 6,
@@ -24,7 +24,7 @@ export default class Cow extends Sprite {
     if ( ! this.scene.anims.get( 'cow-eating-side' ) ) {
       this.scene.anims.create({
         key: 'cow-eating-side',
-        frames: this.scene.anims.generateFrameNames( 'cow-eating-side', {
+        frames: this.scene.anims.generateFrameNumbers( 'cow-eating-side', {
           frames: [0, 1]
         }),
         frameRate: 6,
@@ -37,7 +37,7 @@ export default class Cow extends Sprite {
     if ( ! this.scene.anims.get( 'cow-happy-side' ) ) {
       this.scene.anims.create({
         key: 'cow-happy-side',
-        frames: this.scene.anims.generateFrameNames( 'cow-happy-side', {
+        frames: this.scene.anims.generateFrameNumbers( 'cow-happy-side', {
           frames: [0, 1]
         }),
         frameRate: 6,
@@ -50,7 +50,7 @@ export default class Cow extends Sprite {
     if ( ! this.scene.anims.get( 'cow-shocked' ) ) {
       this.scene.anims.create({
         key: 'cow-shocked',
-        frames: this.scene.anims.generateFrameNames( 'cow-shocked', {
+        frames: this.scene.anims.generateFrameNumbers( 'cow-shocked', {
           frames: [0, 1]
         }),
         frameRate: 6,
@@ -63,7 +63,7 @@ export default class Cow extends Sprite {
     if ( ! this.scene.anims.get( 'cow-sleeping-front' ) ) {
       this.scene.anims.create({
         key: 'cow-sleeping-front',
-        frames: this.scene.anims.generateFrameNames( 'cow-sleeping-front', {
+        frames: this.scene.anims.generateFrameNumbers( 'cow-sleeping-front', {
           frames: [0, 1]
         }),
         frameRate: 6,
@@ -76,7 +76,7 @@ export default class Cow extends Sprite {
     if ( ! this.scene.anims.get( 'cow-sleeping-side' ) ) {
       this.scene.anims.create({
         key: 'cow-sleeping-side',
-        frames: this.scene.anims.generateFrameNames( 'cow-sleeping-side', {
+        frames: this.scene.anims.generateFrameNumbers( 'cow-sleeping-side', {
           frames: [0, 1]
         }),
         frameRate: 6,
