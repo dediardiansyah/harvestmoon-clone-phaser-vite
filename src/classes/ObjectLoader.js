@@ -17,11 +17,20 @@ export default class ObjectLoader {
     // Physics groups
     this.exitGroup = this.scene.physics.add.group();
     this.interactiveGroup = this.scene.physics.add.group();
+    
+    // Exit cooldown to prevent immediate re-triggering
+    this.exitCooldown = false;
+    this.exitCooldownTime = 1000; // 1 second cooldown
   }
 
   setup() {
     this.parseMapData();
     this.setCollision();
+    
+    // Add debug visualization if enabled
+    if (gameConfig.debug && gameConfig.debug.showExitZones) {
+      this.showExitZoneDebug();
+    }
   }
 
   parseMapData() {
@@ -114,13 +123,16 @@ export default class ObjectLoader {
   }
 
   setCollision() {
+    // Start exit cooldown when scene loads
+    this.startExitCooldown();
+    
     // Exit overlaps
     this.exitGroup.children.entries.forEach(exit => {
       this.scene.physics.add.overlap(
         this.player,
         exit,
         () => {
-          if (exit.targetScene) {
+          if (!this.exitCooldown && exit.targetScene) {
             this.newScene(exit.targetScene);
           }
         },
@@ -145,6 +157,13 @@ export default class ObjectLoader {
     });
   }
 
+  startExitCooldown() {
+    this.exitCooldown = true;
+    this.scene.time.delayedCall(this.exitCooldownTime, () => {
+      this.exitCooldown = false;
+    });
+  }
+
   newScene(sceneName) {
     // Update game config
     gameConfig.previousData.scene = gameConfig.loadedScene;
@@ -157,5 +176,63 @@ export default class ObjectLoader {
 
     // Restart scene
     this.scene.scene.restart();
+  }
+
+  showExitZoneDebug() {
+    // Create graphics object for debugging
+    const graphics = this.scene.add.graphics();
+    graphics.setDepth(1000); // Ensure it's on top
+    
+    // Draw exit zones with red rectangles
+    this.exitGroup.children.entries.forEach(exit => {
+      graphics.lineStyle(2, 0xff0000, 1); // Red border
+      graphics.fillStyle(0xff0000, 0.2); // Semi-transparent red fill
+      
+      const bounds = exit.getBounds();
+      graphics.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      
+      // Add text label
+      const text = this.scene.add.text(
+        bounds.x + bounds.width / 2,
+        bounds.y + bounds.height / 2,
+        `EXIT\n${exit.targetScene || 'unknown'}`,
+        {
+          fontSize: '12px',
+          fill: '#ffffff',
+          align: 'center',
+          backgroundColor: '#000000',
+          padding: { x: 4, y: 2 }
+        }
+      );
+      text.setOrigin(0.5);
+      text.setDepth(1001);
+    });
+
+    // Draw interactive zones with blue rectangles
+    this.interactiveGroup.children.entries.forEach(interactive => {
+      graphics.lineStyle(2, 0x0000ff, 1); // Blue border
+      graphics.fillStyle(0x0000ff, 0.1); // Semi-transparent blue fill
+      
+      const bounds = interactive.getBounds();
+      graphics.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+      
+      // Add text label
+      const text = this.scene.add.text(
+        bounds.x + bounds.width / 2,
+        bounds.y + bounds.height / 2,
+        `INTERACT\n${interactive.name || 'unknown'}`,
+        {
+          fontSize: '10px',
+          fill: '#ffffff',
+          align: 'center',
+          backgroundColor: '#000080',
+          padding: { x: 2, y: 1 }
+        }
+      );
+      text.setOrigin(0.5);
+      text.setDepth(1001);
+    });
   }
 }

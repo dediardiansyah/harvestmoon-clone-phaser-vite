@@ -4,6 +4,11 @@ let gameConfig = {
   // on game init, start at this scene
   loadedScene: 'sceneFarm',
 
+  // debug mode for showing exit zones
+  debug: {
+    showExitZones: false
+  },
+
   // pause loop so you can do event-listener anims
   pauseUpdateLoop: false,
 
@@ -91,7 +96,7 @@ let gameConfig = {
         },
         sceneCave1: {
           x: 600,
-          y: 300
+          y: 400
         },
       }
     },

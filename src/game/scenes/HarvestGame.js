@@ -92,6 +92,7 @@ export class HarvestGame extends Scene {
     this._INPUTS.escape = this.input.keyboard.addKey(27);
     this._INPUTS.shift = this.input.keyboard.addKey(16);
     this._INPUTS.space = this.input.keyboard.addKey(32);
+    this._INPUTS.debug = this.input.keyboard.addKey(68); // 'D' key for debug
   }
 
   setupObjects() {
@@ -116,11 +117,23 @@ export class HarvestGame extends Scene {
       this._UTILITY.boxManager.createBox('tasks');
     } else if (this._INPUTS.escape.isDown) {
       this._UTILITY.boxManager.hideBox();
+    } else if (this._INPUTS.debug.isDown) {
+      this.toggleDebugMode();
     } else if (this._INPUTS.space.isDown) {
       this.handleSpacePress();
     } else if (this._INPUTS.space.isUp) {
       gameConfig.pauseUpdateLoop = false;
     }
+  }
+
+  toggleDebugMode() {
+    if (!gameConfig.debug) {
+      gameConfig.debug = { showExitZones: false };
+    }
+    gameConfig.debug.showExitZones = !gameConfig.debug.showExitZones;
+    
+    // Restart scene to apply debug changes
+    this.scene.restart();
   }
 
   handleSpacePress() {
