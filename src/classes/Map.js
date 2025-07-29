@@ -35,5 +35,8 @@ export default class Map {
 
     // Set collision
     this.blockedLayer.setCollisionByExclusion(-1);
+
+    //todo: Set collision by property
+    // this.blockedLayer.setCollisionByProperty({ collides: true });
   }
 }

@@ -3,6 +3,7 @@ import { AUTO, Game, Scale } from 'phaser';
 
 //  Find out more information about the Game Config at:
 //  https://docs.phaser.io/api-documentation/typedef/types-core#gameconfig
+import { PhaserNavMeshPlugin } from 'phaser-navmesh';
 const config = {
     type: AUTO,
     width: 1280,
@@ -18,6 +19,16 @@ const config = {
     scale: {
         mode: Scale.FIT,
         autoCenter: Scale.CENTER_BOTH
+    },
+    plugins: {
+        scene: [
+            {
+                key: 'PhaserNavMeshPlugin',
+                plugin: PhaserNavMeshPlugin,
+                mapping: 'navMeshPlugin',
+                start: true
+            }
+        ]
     },
     scene: [
         HarvestGame
