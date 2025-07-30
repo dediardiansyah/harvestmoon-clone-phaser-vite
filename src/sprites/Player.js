@@ -19,6 +19,12 @@ export default class Player extends GameObjects.Sprite {
     this.scene.physics.add.existing(this);
     this.body.setCollideWorldBounds(true);
     this.body.allowGravity = false;
+    
+    // Set smaller collision body to prevent getting stuck
+    // This makes the player's collision box smaller than the sprite
+    // Adjusted for better movement around tiles
+    this.body.setSize(16, 12, true); // width, height, center
+    this.body.setOffset(8, 16); // x offset, y offset from sprite origin
 
     // Setup animations
     this.setAnimations();
