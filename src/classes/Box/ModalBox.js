@@ -84,7 +84,8 @@ export default class ModalBox {
         .setScrollFactor(0)
         .setInteractive({ useHandCursor: true });
 
-    this.btns.closeBtn.on('pointerdown', () => {
+    this.btns.closeBtn.on('pointerdown', (pointer, localX, localY, event) => {
+      event.stopPropagation();
       gameConfig.taskMenuOpen = false;
       this.hideBox();
     });

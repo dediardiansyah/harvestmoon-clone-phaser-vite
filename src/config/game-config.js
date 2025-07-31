@@ -9,9 +9,6 @@ let gameConfig = {
     showExitZones: false
   },
 
-  // pause loop so you can do event-listener anims
-  pauseUpdateLoop: false,
-
   // previous Scene data
   previousData: {
     scene: '', // previously loaded Scene

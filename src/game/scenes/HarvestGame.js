@@ -189,8 +189,6 @@ export class HarvestGame extends Scene {
       this.toggleDebugMode();
     } else if (this._INPUTS.space.isDown) {
       this.handleSpacePress();
-    } else if (this._INPUTS.space.isUp) {
-      gameConfig.pauseUpdateLoop = false;
     }
   }
 
@@ -205,9 +203,6 @@ export class HarvestGame extends Scene {
   }
 
   handleSpacePress() {
-    gameConfig.pauseUpdateLoop = true;
-    this.stopPlayerAnim();
-
     const animMap = {
       down: "ring-cowbell-down",
       up: "ring-cowbell-up",
@@ -236,12 +231,17 @@ export class HarvestGame extends Scene {
   }
 
   update() {
-    if (!gameConfig.pauseUpdateLoop) {
-      if (this._autoPath && this._autoPathIndex < this._autoPath.length) {
-        this.updateAutoPath();
-      } else {
-        this.updateMovement();
-      }
+    if (gameConfig.taskMenuOpen) {
+      this._autoPath = null;
+      this._autoPathIndex = 0;
+      this._autoTarget = null;
+      this.stopPlayerAnim();
+    }
+
+    if (this._autoPath && this._autoPathIndex < this._autoPath.length) {
+      this.updateAutoPath();
+    } else {
+      this.updateMovement();
     }
   }
 
