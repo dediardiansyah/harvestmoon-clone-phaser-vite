@@ -9,6 +9,7 @@ import ObjectLoader from "../../classes/ObjectLoader";
 import Player from "../../sprites/Player";
 import BoxManager from "../../classes/Box/BoxManager";
 import ImageLoader from "../../classes/ImageLoader";
+import TaskSystemIntegration from "../../classes/Task/TaskSystemIntegration.js";
 
 export class HarvestGame extends Scene {
   constructor() {
@@ -32,6 +33,7 @@ export class HarvestGame extends Scene {
     this._PLAYER = {};
     this._SPRITES = {};
     this._UTILITY = {};
+    this._TASKS = {}; // Task system objects
   }
 
   preload() {
@@ -55,6 +57,7 @@ export class HarvestGame extends Scene {
     this.setupCamera(mapVars);
     this.setupInput();
     this.setupObjects();
+    this.setupTasks(); // Initialize task system
     this.setupEventListeners();
 
     // Debug blocked layer: visualize blocked tiles
@@ -158,6 +161,7 @@ export class HarvestGame extends Scene {
     this._INPUTS.shift = this.input.keyboard.addKey(16);
     this._INPUTS.space = this.input.keyboard.addKey(32);
     this._INPUTS.debug = this.input.keyboard.addKey(68); // 'D' key for debug
+    this._INPUTS.taskToggle = this.input.keyboard.addKey(84); // 'T' key for task UI
   }
 
   setupObjects() {
@@ -170,24 +174,122 @@ export class HarvestGame extends Scene {
     this._UTILITY.boxManager = new BoxManager(this);
   }
 
+  setupTasks() {
+    // Initialize modern task system synchronously
+    this.taskSystem = new TaskSystemIntegration(this);
+
+    // Set up backward compatible interface
+    this._TASKS = {
+      manager: this.taskSystem.createManagerProxy(),
+      ui: this.taskSystem.createUIProxy(),
+    };
+
+    // Connect task system with ObjectLoader for indicator updates
+    if (this._UTILITY.ObjectLoader) {
+      this.taskSystem.setObjectLoader(this._UTILITY.ObjectLoader);
+    }
+  }
+
   setupEventListeners() {
     this.input.keyboard.on("keydown", this.handleKeyDown.bind(this));
     this._PLAYER.on(
       "animationcomplete",
       this.handleAnimationComplete.bind(this)
     );
+
+    this.events.on(
+      "taskIndicator:click",
+      this.handleTaskIndicatorClick.bind(this)
+    );
+  }
+
+  /**
+   * Handle TaskIndicator click events
+   * @param {TaskIndicator} indicator - The clicked indicator
+   */
+  handleTaskIndicatorClick(indicator) {
+    const tasks = this._TASKS;
+    
+    // Simple fix: use the taskId from the clicked indicator directly
+    if (indicator && indicator.options && indicator.options.taskId) {
+      const animalName = indicator.options.taskId;
+      
+      // Direct interaction with the specific animal
+      if (tasks?.manager?.hasActiveTasksForTarget(animalName)) {
+        tasks.manager.handleAnimalInteraction(animalName);
+        return;
+      }
+    }
   }
 
   handleKeyDown() {
-    if (this._INPUTS.enter.isDown && gameConfig.overlapData.isActive) {
-      this._UTILITY.boxManager.createBox("dialog");
-    } else if (this._INPUTS.shift.isDown) {
-      this._UTILITY.boxManager.createBox("tasks");
-    } else if (this._INPUTS.escape.isDown) {
-      this._UTILITY.boxManager.hideBox();
-    } else if (this._INPUTS.debug.isDown) {
+    const inputs = this._INPUTS;
+    const utility = this._UTILITY;
+    const tasks = this._TASKS;
+    const overlap = gameConfig.overlapData;
+
+    if (inputs.enter.isDown && overlap.isActive) {
+      const target = overlap.sprite;
+      
+      // Simple fix: directly use the overlapped sprite's name for interaction
+      if (target && target.name && target.creatureType === "animal") {
+        const hasActiveTasks = tasks?.manager?.hasActiveTasksForTarget(target.name) || false;
+        
+        if (hasActiveTasks) {
+          tasks.manager.handleAnimalInteraction(target.name);
+        } else {
+          utility.boxManager.createBox("dialog");
+        }
+      } else if (target) {
+        utility.boxManager.createBox("dialog");
+      }
+      return;
+    }
+
+    if (inputs.enter.isDown && overlap.isActive) {
+      const target = overlap.sprite;
+      
+      // Simple fix: directly use the overlapped sprite's name for interaction
+      if (target && target.name && target.creatureType === "animal") {
+        const hasActiveTasks = tasks?.manager?.hasActiveTasksForTarget(target.name) || false;
+        
+        if (hasActiveTasks) {
+          tasks.manager.handleAnimalInteraction(target.name);
+        } else {
+          utility.boxManager.createBox("dialog");
+        }
+      } else if (target) {
+        utility.boxManager.createBox("dialog");
+      }
+      return;
+    }
+
+    // Status box toggle
+    if (inputs.shift.isDown) {
+      utility.boxManager.createBox("status");
+      return;
+    }
+
+    // Task UI toggle
+    if (inputs.taskToggle.isDown) {
+      tasks?.ui?.toggle();
+      return;
+    }
+
+    // Hide current box
+    if (inputs.escape.isDown) {
+      utility.boxManager.hideBox();
+      return;
+    }
+
+    // Toggle debug mode
+    if (inputs.debug.isDown) {
       this.toggleDebugMode();
-    } else if (this._INPUTS.space.isDown) {
+      return;
+    }
+
+    // Space key action
+    if (inputs.space.isDown) {
       this.handleSpacePress();
     }
   }
@@ -280,6 +382,11 @@ export class HarvestGame extends Scene {
     const vy = (dy / dist) * speed;
     player.body.setVelocity(vx, vy);
 
+    // Reset overlap data when auto-moving
+    gameConfig.overlapData.isActive = false;
+    gameConfig.overlapData.sprite = {};
+    gameConfig.overlapData.overlap = {};
+
     // Set animation based on direction
     let direction = "down";
     let animKey = "walking-down";
@@ -325,6 +432,13 @@ export class HarvestGame extends Scene {
     this._PLAYER.body.setVelocity(velocityX, velocityY);
     this._ANIMS.pressedCursor = direction;
     this.playAnim(animKey);
+
+    // Reset overlap data when player moves
+    if (velocityX !== 0 || velocityY !== 0) {
+      gameConfig.overlapData.isActive = false;
+      gameConfig.overlapData.sprite = {};
+      gameConfig.overlapData.overlap = {};
+    }
   }
 
   playAnim(animKey) {
@@ -359,5 +473,25 @@ export class HarvestGame extends Scene {
       return playerCoords[prevScene];
     }
     return playerCoords.default;
+  }
+
+  destroy() {
+    // Clean up task system
+    if (this.taskSystem) {
+      this.taskSystem.destroy();
+    }
+
+    // Clean up ObjectLoader
+    if (this._UTILITY && this._UTILITY.ObjectLoader) {
+      this._UTILITY.ObjectLoader.destroy();
+    }
+
+    // Clean up any remaining references
+    if (this._TASKS) {
+      this._TASKS = null;
+    }
+
+    // Call parent destroy
+    super.destroy();
   }
 }

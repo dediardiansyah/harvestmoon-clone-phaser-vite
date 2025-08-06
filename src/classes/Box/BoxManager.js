@@ -2,10 +2,9 @@
  * manages Task and Dialog boxes
  */
 
-import ModalBox from './ModalBox';
-import allTasks from '../../config/tasks';
-import dialogAnimals from '../../config/dialog-animal';
-import dialogNPCs from '../../config/dialog-npc';
+import ModalBox from "./ModalBox";
+import dialogAnimals from "../../config/dialog-animal";
+import dialogNPCs from "../../config/dialog-npc";
 import gameConfig from "../../config/game-config";
 
 export default class BoxManager {
@@ -18,75 +17,59 @@ export default class BoxManager {
   // adds buttons to game
   loadAssets() {
     this.setAsset({
-      name: 'statusBtn', // name of var
-      key: 'btn-status', // key of image to add
+      name: "statusBtn", // name of var
+      key: "btn-status", // key of image to add
       x: 167, // x position
       y: 960 - 468,
-      cb: this.loadStatusBox // function to run on pointerdown event
+      cb: this.loadStatusBox, // function to run on pointerdown event
     });
 
     this.setAsset({
-      name: 'statusBtnInactive',
-      key: 'btn-status-inactive',
+      name: "statusBtnInactive",
+      key: "btn-status-inactive",
       x: 167,
       y: 960 - 468,
-      cb: this.loadStatusBox
+      cb: this.loadStatusBox,
     });
 
-    this.setAsset({
-      name: 'taskBtn',
-      key: 'btn-tasks',
-      x: 500,
-      y: 960 - 468,
-      cb: this.loadTaskBox
-    });
-
-    this.setAsset({
-      name: 'taskBtnInactive',
-      key: 'btn-tasks-inactive',
-      x: 500,
-      y: 960 - 468,
-      cb: this.loadTaskBox
-    });
-
-    this.dialogBox = new ModalBox( this.scene );
+    this.dialogBox = new ModalBox(this.scene);
   }
 
   /**
    * helper function for adding assets, adds image, sets event listener
    * @param config : object config options for
    */
-  setAsset( config ) {
-    this.btns[config.name] = this.scene.add.image( config.x, config.y, config.key )
-      .setScrollFactor( 0 )
-      .setInteractive( { useHandCursor: true  } )
-      .setVisible( false );
+  setAsset(config) {
+    this.btns[config.name] = this.scene.add
+      .image(config.x, config.y, config.key)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true })
+      .setVisible(false);
 
-    this.btns[config.name].on( 'pointerdown', () => {
-      config.cb( this );
+    this.btns[config.name].on("pointerdown", () => {
+      config.cb(this);
     });
   }
 
   /**
    * Creates modal box based on passed type
-   * @param type : string what type
    */
-  createBox( type ) {
+  createBox(type) {
     this.type = type;
 
-    if ( this.type !== 'dialog' && this.type !== 'tasks' ) {
+    if (this.type !== "dialog" && this.type !== "status") {
       return;
     }
 
     // set gameConfig prop
     gameConfig.taskMenuOpen = true;
 
-    switch( this.type) {
-      case 'dialog':
+    switch (this.type) {
+      case "dialog":
         this.loadDialogBox();
         break;
-      case 'tasks':
-        this.loadButtons();
+      case "status":
+        this.loadStatusBox(this);
         break;
     }
   }
@@ -104,83 +87,62 @@ export default class BoxManager {
     console.log(type);
 
     // animal or npc dialog
-    switch( type ) {
-      case 'animal': {
+    switch (type) {
+      case "animal": {
         let options = dialogAnimals[name].default;
 
         // append additional dialog options, if found lil babby
-        if ( gameConfig.foundBabyCow ) {
-          options.push( ... dialogAnimals[name].additional );
+        if (gameConfig.foundBabyCow) {
+          options.push(...dialogAnimals[name].additional);
         }
 
-        text = this.randomIndex( options );
+        text = this.randomIndex(options);
         break;
       }
 
-      case 'npc': {
+      case "npc": {
         break;
       }
 
-      case 'interactive': {
-          // if sign, display msg
+      case "interactive": {
+        // if sign, display msg
 
         break;
       }
     }
 
-    this.dialogBox.loadBox( text );
+    this.dialogBox.loadBox(text);
   }
 
   // grabs random index from array
-  randomIndex( arr ) {
-    return arr[Math.floor( Math.random() * arr.length )];
-  }
-
-  // loads buttons to view Tasks or Status, by default see Status first
-  loadButtons() {
-    // this.dialogBox.hideBox();
-    this.loadStatusBox( this );
-    this.btns.statusBtn.setVisible( true );
-    this.btns.taskBtnInactive.setVisible( true );
+  randomIndex(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
   }
 
   /**
-   * Task box with list of active tasks to complete
+   * Status box with progress info & animal status
    * @param instance : this class instance, since we are calling this func in setAsset()
    */
-  loadTaskBox( instance ) {
-    instance.btns.statusBtn.setVisible( false );
-    instance.btns.statusBtnInactive.setVisible( true );
+  loadStatusBox(instance) {
+    instance.btns.statusBtnInactive.setVisible(false);
+    instance.btns.statusBtn.setVisible(true);
 
-    instance.btns.taskBtnInactive.setVisible( false );
-    instance.btns.taskBtn.setVisible( true );
+    // Assemble progress info
+    let text = `Progress Status`;
 
-    instance.dialogBox.loadBox( 'list of all active tasks' );
-  }
+    // Add task progress if TaskManager is available
+    if (instance.scene._TASKS && instance.scene._TASKS.manager) {
+      const progress = instance.scene._TASKS.manager.getProgress();
+      text += `\n\nTask Progress: ${progress.completed}/${progress.total} (${progress.percentage}%)`;
+    }
 
-  /**
-   * Status box with date info & animal status
-   * @param instance : this class instance, since we are calling this func in setAsset()
-   */
-  loadStatusBox( instance ) {
-    instance.btns.taskBtn.setVisible( false );
-    instance.btns.taskBtnInactive.setVisible( true );
-
-    instance.btns.statusBtnInactive.setVisible( false );
-    instance.btns.statusBtn.setVisible( true );
-
-    // assemble current day and animal status info
-    const text = `Day: ${gameConfig.day}\nAnimal Status`;
-
-    instance.dialogBox.loadBox( text );
+    instance.dialogBox.loadBox(text);
   }
 
   // hides tasks buttons
   hideBtns() {
-    this.btns.statusBtn.setVisible( false );
-    this.btns.taskBtn.setVisible( false );
-    this.btns.taskBtnInactive.setVisible( false );
-    this.btns.statusBtnInactive.setVisible( false );
+    this.btns.statusBtn.setVisible(false);
+    this.btns.statusBtnInactive.setVisible(false);
   }
 
   // hides created Boxes
@@ -189,5 +151,4 @@ export default class BoxManager {
     this.dialogBox.hideBox();
     gameConfig.taskMenuOpen = false;
   }
-
 }

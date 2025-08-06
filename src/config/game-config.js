@@ -583,9 +583,6 @@ let gameConfig = {
   // keeping track of your score
   score: 0,
 
-  // day tracker, this game has 5 playable days and 1 final day for the ending
-  day: 1,
-
   // Task menu is open
   taskMenuOpen: false,
 

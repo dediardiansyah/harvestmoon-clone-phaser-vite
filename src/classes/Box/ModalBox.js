@@ -137,8 +137,6 @@ export default class ModalBox {
 
     this.btns.statusBtn.setVisible( false );
     this.btns.statusBtnInactive.setVisible( false );
-    this.btns.taskBtn.setVisible( false );
-    this.btns.taskBtnInactive.setVisible( false );
   }
 
 }

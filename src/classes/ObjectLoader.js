@@ -2,10 +2,12 @@
  * Creating item locations from Object layers
  */
 
-import gameConfig from '../config/game-config';
-import Cow from '../sprites/animals/Cow';
-import Chicken from '../sprites/animals/Chicken';
-import Sprite from '../sprites/Sprite';
+import gameConfig from "../config/game-config";
+import Cow from "../sprites/animals/Cow";
+import Chicken from "../sprites/animals/Chicken";
+import Sprite from "../sprites/Sprite";
+import TaskIndicator from "./Task/TaskIndicator.js";
+import { TaskConfigManager } from "../config/task-config.js";
 
 export default class ObjectLoader {
   constructor(config) {
@@ -13,11 +15,14 @@ export default class ObjectLoader {
     this.player = this.scene._PLAYER;
     this.sprites = this.scene._SPRITES;
     this.mapData = config.objectLayers;
-
     // Physics groups
     this.exitGroup = this.scene.physics.add.group();
     this.interactiveGroup = this.scene.physics.add.group();
-    
+
+    // Task system
+    this.taskConfigManager = new TaskConfigManager();
+    this.taskIndicators = new Map();
+
     // Exit cooldown to prevent immediate re-triggering
     this.exitCooldown = false;
     this.exitCooldownTime = 1000; // 1 second cooldown
@@ -26,7 +31,7 @@ export default class ObjectLoader {
   setup() {
     this.parseMapData();
     this.setCollision();
-    
+
     // Add debug visualization if enabled
     if (gameConfig.debug && gameConfig.debug.showExitZones) {
       this.showExitZoneDebug();
@@ -34,15 +39,15 @@ export default class ObjectLoader {
   }
 
   parseMapData() {
-    this.mapData.forEach(layer => {
+    this.mapData.forEach((layer) => {
       switch (layer.name) {
-        case 'exits':
+        case "exits":
           this.handleExits(layer);
           break;
-        case 'animals':
+        case "animals":
           this.handleAnimals(layer);
           break;
-        case 'interactive':
+        case "interactive":
           this.handleInteractive(layer);
           break;
       }
@@ -50,9 +55,14 @@ export default class ObjectLoader {
   }
 
   handleExits(layer) {
-    layer.objects.forEach(obj => {
-      const targetScene = this.findPropValue(obj.properties, 'exit');
-      const exitSprite = this.addToPhysicsGroup(obj, this.exitGroup, 'exits', 'pixel');
+    layer.objects.forEach((obj) => {
+      const targetScene = this.findPropValue(obj.properties, "exit");
+      const exitSprite = this.addToPhysicsGroup(
+        obj,
+        this.exitGroup,
+        "exits",
+        "pixel"
+      );
       if (exitSprite && targetScene) {
         exitSprite.targetScene = targetScene;
       }
@@ -60,7 +70,7 @@ export default class ObjectLoader {
   }
 
   handleAnimals(layer) {
-    layer.objects.forEach(obj => {
+    layer.objects.forEach((obj) => {
       const type = obj.properties?.[1]?.value;
       const name = obj.properties?.[0]?.value;
 
@@ -68,42 +78,60 @@ export default class ObjectLoader {
 
       const config = { scene: this.scene, x: obj.x, y: obj.y };
 
+      // Create animal sprite
       switch (type) {
-        case 'cow':
-          this.sprites[name] = new Cow({ ...config, key: 'cow' }, name, 'animal');
+        case "cow":
+          this.sprites[name] = new Cow(
+            { ...config, key: "cow" },
+            name,
+            "animal"
+          );
           break;
-        case 'chicken':
-          this.sprites[name] = new Chicken({ ...config, key: 'chicken2' }, name, 'animal');
+        case "chicken":
+          this.sprites[name] = new Chicken(
+            { ...config, key: "chicken2" },
+            name,
+            "animal"
+          );
           break;
       }
+
+      // Check if this animal has tasks configured and create indicator
+      this.createTaskIndicatorForAnimal(name, obj.x, obj.y);
     });
   }
 
   handleInteractive(layer) {
-    layer.objects.forEach(obj => {
-      const objType = this.findPropValue(obj.properties, 'type');
-      
-      if (objType === 'sign') {
-        this.addToPhysicsGroup(obj, this.interactiveGroup, 'interactive', 'pixel', 'interactive');
+    layer.objects.forEach((obj) => {
+      const objType = this.findPropValue(obj.properties, "type");
+
+      if (objType === "sign") {
+        this.addToPhysicsGroup(
+          obj,
+          this.interactiveGroup,
+          "interactive",
+          "pixel",
+          "interactive"
+        );
       } else {
-        const key = this.findPropValue(obj.properties, 'name');
+        const key = this.findPropValue(obj.properties, "name");
         if (key) {
           this.sprites[key] = new Sprite(
             { scene: this.scene, x: obj.x, y: obj.y, key },
             key,
-            'interactive'
+            "interactive"
           );
         }
       }
     });
   }
 
-  addToPhysicsGroup(obj, physicsGroup, layerName, keyName, type = '') {
+  addToPhysicsGroup(obj, physicsGroup, layerName, keyName, type = "") {
     const newObj = this.scene._MAP.tilemap.createFromObjects(layerName, {
       id: obj.id,
-      key: keyName
+      key: keyName,
     });
-    
+
     if (newObj?.length > 0 && newObj[0]) {
       const sprite = newObj[0];
       sprite.setOrigin(0.5, -0.5);
@@ -112,22 +140,24 @@ export default class ObjectLoader {
       physicsGroup.add(sprite);
       return sprite;
     }
-    
-    console.warn(`Failed to create object: ${keyName}, layer: ${layerName}, id: ${obj.id}`);
+
+    console.warn(
+      `Failed to create object: ${keyName}, layer: ${layerName}, id: ${obj.id}`
+    );
     return null;
   }
 
   findPropValue(props, key) {
     if (!Array.isArray(props)) return undefined;
-    return props.find(prop => prop.name === key)?.value;
+    return props.find((prop) => prop.name === key)?.value;
   }
 
   setCollision() {
     // Start exit cooldown when scene loads
     this.startExitCooldown();
-    
+
     // Exit overlaps
-    this.exitGroup.children.entries.forEach(exit => {
+    this.exitGroup.children.entries.forEach((exit) => {
       this.scene.physics.add.overlap(
         this.player,
         exit,
@@ -142,7 +172,7 @@ export default class ObjectLoader {
     });
 
     // Interactive overlaps
-    this.interactiveGroup.children.entries.forEach(entry => {
+    this.interactiveGroup.children.entries.forEach((entry) => {
       this.scene.physics.add.overlap(
         this.player,
         entry,
@@ -171,7 +201,7 @@ export default class ObjectLoader {
     gameConfig.previousData.direction = this.scene._ANIMS.pressedCursor;
     gameConfig.previousData.coords = {
       x: this.player.x,
-      y: this.player.y
+      y: this.player.y,
     };
 
     // Restart scene
@@ -182,27 +212,27 @@ export default class ObjectLoader {
     // Create graphics object for debugging
     const graphics = this.scene.add.graphics();
     graphics.setDepth(1000); // Ensure it's on top
-    
+
     // Draw exit zones with red rectangles
-    this.exitGroup.children.entries.forEach(exit => {
+    this.exitGroup.children.entries.forEach((exit) => {
       graphics.lineStyle(2, 0xff0000, 1); // Red border
       graphics.fillStyle(0xff0000, 0.2); // Semi-transparent red fill
-      
+
       const bounds = exit.getBounds();
       graphics.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
       graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-      
+
       // Add text label
       const text = this.scene.add.text(
         bounds.x + bounds.width / 2,
         bounds.y + bounds.height / 2,
-        `EXIT\n${exit.targetScene || 'unknown'}`,
+        `EXIT\n${exit.targetScene || "unknown"}`,
         {
-          fontSize: '12px',
-          fill: '#ffffff',
-          align: 'center',
-          backgroundColor: '#000000',
-          padding: { x: 4, y: 2 }
+          fontSize: "12px",
+          fill: "#ffffff",
+          align: "center",
+          backgroundColor: "#000000",
+          padding: { x: 4, y: 2 },
         }
       );
       text.setOrigin(0.5);
@@ -210,29 +240,119 @@ export default class ObjectLoader {
     });
 
     // Draw interactive zones with blue rectangles
-    this.interactiveGroup.children.entries.forEach(interactive => {
+    this.interactiveGroup.children.entries.forEach((interactive) => {
       graphics.lineStyle(2, 0x0000ff, 1); // Blue border
       graphics.fillStyle(0x0000ff, 0.1); // Semi-transparent blue fill
-      
+
       const bounds = interactive.getBounds();
       graphics.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
       graphics.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-      
+
       // Add text label
       const text = this.scene.add.text(
         bounds.x + bounds.width / 2,
         bounds.y + bounds.height / 2,
-        `INTERACT\n${interactive.name || 'unknown'}`,
+        `INTERACT\n${interactive.name || "unknown"}`,
         {
-          fontSize: '10px',
-          fill: '#ffffff',
-          align: 'center',
-          backgroundColor: '#000080',
-          padding: { x: 2, y: 1 }
+          fontSize: "10px",
+          fill: "#ffffff",
+          align: "center",
+          backgroundColor: "#000080",
+          padding: { x: 2, y: 1 },
         }
       );
       text.setOrigin(0.5);
       text.setDepth(1001);
     });
+  }
+
+  /**
+   * Create task indicator for animal if it has configured tasks
+   * @param {string} animalName - Animal name
+   * @param {number} x - X position
+   * @param {number} y - Y position
+   */
+  createTaskIndicatorForAnimal(animalName, x, y) {
+    // Check if this animal has tasks in the config
+    const animalTaskConfigs = this.taskConfigManager.getAnimalTaskConfigs();
+    
+    if (animalTaskConfigs[animalName]) {
+      // Create indicator at the animal's position
+      const indicator = new TaskIndicator(this.scene, x, y - 30, {
+        taskId: animalName,
+        taskType: 'animal',
+        type: 'animal'
+      });
+
+      // Store indicator reference
+      this.taskIndicators.set(animalName, indicator);
+      
+      console.log(`Created task indicator for ${animalName} at position (${x}, ${y})`);
+    }
+  }
+
+  /**
+   * Update task indicator visibility based on task completion status
+   * @param {string} animalName - Animal name
+   * @param {boolean} hasIncompleteTasks - Whether animal has incomplete tasks
+   */
+  updateTaskIndicator(animalName, hasIncompleteTasks) {
+    const indicator = this.taskIndicators.get(animalName);
+    if (indicator) {
+      indicator.setVisible(hasIncompleteTasks);
+    }
+  }
+
+  /**
+   * Get task indicator for animal
+   * @param {string} animalName - Animal name
+   * @returns {TaskIndicator|null}
+   */
+  getTaskIndicator(animalName) {
+    return this.taskIndicators.get(animalName) || null;
+  }
+
+  /**
+   * Remove task indicator for animal
+   * @param {string} animalName - Animal name
+   */
+  removeTaskIndicator(animalName) {
+    const indicator = this.taskIndicators.get(animalName);
+    if (indicator) {
+      indicator.destroy();
+      this.taskIndicators.delete(animalName);
+    }
+  }
+
+  /**
+   * Clean up all task indicators
+   */
+  cleanupTaskIndicators() {
+    this.taskIndicators.forEach((indicator, animalName) => {
+      indicator.destroy();
+    });
+    this.taskIndicators.clear();
+  }
+
+  /**
+   * Clean up all resources
+   */
+  destroy() {
+    // Clean up task indicators
+    this.cleanupTaskIndicators();
+    
+    // Clean up overlap timers for interactive objects
+    if (this.interactiveGroup) {
+      this.interactiveGroup.children.entries.forEach((entry) => {
+        if (entry._overlapTimer) {
+          entry._overlapTimer.destroy();
+        }
+      });
+    }
+    
+    // Reset overlap data
+    gameConfig.overlapData.isActive = false;
+    gameConfig.overlapData.sprite = {};
+    gameConfig.overlapData.overlap = {};
   }
 }
